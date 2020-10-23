@@ -7,10 +7,15 @@ from taggit.models import TaggedItemBase
 
 from wagtail.core.models import Page, Orderable
 from wagtail.core.fields import RichTextField
-from wagtail.admin.edit_handlers import FieldPanel, InlinePanel, MultiFieldPanel
+from wagtail.admin.edit_handlers import (
+    FieldPanel,
+    InlinePanel,
+    MultiFieldPanel,
+)
 from wagtail.images.edit_handlers import ImageChooserPanel
 from wagtail.search import index
 from wagtail.snippets.models import register_snippet
+from wagtail.snippets.edit_handlers import SnippetChooserPanel
 
 
 class BlogIndexPage(Page):
@@ -63,7 +68,25 @@ class BlogPage(Page):
         FieldPanel('intro'),
         FieldPanel('body', classname="full"),
         InlinePanel('gallery_images', label="Gallery images"),
+        InlinePanel(
+            'blog_person_relationship', label="Author(s)",
+            panels=None, min_num=1
+        ),
     ]
+
+    def authors(self):
+        """
+        Returns the BlogPage's related People. Again note that we are using
+        the ParentalKey's related_name from the BlogPagePeopleRelationship model
+        to access these objects. This allows us to access the People objects
+        with a loop on the template. If we tried to access the blog_person_
+        relationship directly we'd print `blog.BlogPagePeopleRelationship.None`
+        """
+        authors = [
+            n.people for n in self.blog_person_relationship.all()
+        ]
+
+        return authors
 
 
 class BlogPageGalleryImage(Orderable):
@@ -111,3 +134,21 @@ class BlogCategory(models.Model):
 
     class Meta:
         verbose_name_plural = 'blog categories'
+
+
+class BlogPagePeopleRelationship(Orderable, models.Model):
+    """
+    This defines the relationship between the `People` within the `base`
+    app and the BlogPage. This allows People to be added to a BlogPage.
+    We have created a two way relationship between BlogPage and People using
+    the ParentalKey and ForeignKey
+    """
+    page = ParentalKey(
+        'BlogPage', related_name='blog_person_relationship', on_delete=models.CASCADE
+    )
+    people = models.ForeignKey(
+        'base.People', related_name='person_blog_relationship', on_delete=models.CASCADE
+    )
+    panels = [
+        SnippetChooserPanel('people')
+    ]
