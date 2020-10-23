@@ -6,6 +6,15 @@
 
 {% block content %}
     <h1>{{ page.title }}</h1>
+    {% if page.authors %}
+        <p class="authors">
+            By
+            {% for author in page.authors %}
+                {% if forloop.counter > 1 %}<span>,</span>{% endif %}
+                <span>{{ author }}</span>
+            {% endfor %}
+        </p>
+    {% endif %}
     <p class="meta">{{ page.date }}</p>
     {% with categories=page.categories.all %}
         {% if categories %}
